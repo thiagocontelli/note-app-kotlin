@@ -1,38 +1,48 @@
 package com.contelli.jetnote.screen
 
-import androidx.compose.runtime.mutableStateListOf
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.contelli.jetnote.model.Note
-import java.util.*
+import com.contelli.jetnote.repository.NoteRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class NoteViewModel : ViewModel() {
-    private val noteList = mutableStateListOf<Note>()
+@HiltViewModel
+class NoteViewModel @Inject constructor(private val repository: NoteRepository) : ViewModel() {
+    private val _noteList = MutableStateFlow<List<Note>>(emptyList())
+    val noteList = _noteList.asStateFlow()
+
     private val titleInput = mutableStateOf("")
     private val noteInput = mutableStateOf("")
 
-    fun addNote() {
-        val titleExists = noteList.filter { it.title == titleInput.value }.isNotEmpty()
-        val noteExists = noteList.filter { it.note == noteInput.value }.isNotEmpty()
-        if (titleInput.value.trim().isEmpty() || noteInput.value.trim().isEmpty()) return
-        if (titleExists && noteExists) return
-        noteList.add(
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.getAllNotes().distinctUntilChanged().collect {
+                if (it.isNullOrEmpty()) {
+                    Log.d("Empty List", ": Empty List")
+                }
+                _noteList.value = it
+            }
+        }
+    }
+
+    fun addNote() = viewModelScope.launch {
+        repository.addNote(
             Note(
-                id = UUID.randomUUID(),
-                title = titleInput.value,
-                note = noteInput.value,
-                date = Date()
+                title = titleInput.value, note = noteInput.value
             )
         )
     }
 
-    fun removeNote(note: Note) {
-        noteList.remove(note)
-    }
-
-    fun getAllNotes(): MutableList<Note> {
-        return noteList
-    }
+    fun updateNote(note: Note) = viewModelScope.launch { repository.updateNote(note) }
+    fun removeNote(note: Note) = viewModelScope.launch { repository.deleteNote(note) }
 
     fun setTitleInput(title: String) {
         titleInput.value = title

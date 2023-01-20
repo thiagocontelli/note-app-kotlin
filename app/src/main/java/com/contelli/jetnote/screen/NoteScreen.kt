@@ -1,13 +1,16 @@
 package com.contelli.jetnote.screen
 
+//import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,9 +20,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.contelli.jetnote.R
 import java.text.SimpleDateFormat
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteScreen(viewModel: NoteViewModel = viewModel()) {
-    val noteList = viewModel.getAllNotes()
+    val noteList = viewModel.noteList.collectAsState().value
     Column {
         TopAppBar(title = {
             Text(text = stringResource(id = R.string.app_name))
@@ -42,41 +46,44 @@ fun NoteScreen(viewModel: NoteViewModel = viewModel()) {
             Button(onClick = {
                 viewModel.addNote()
             }, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Save", style = MaterialTheme.typography.button)
+                Text(text = "Save")
             }
             Spacer(modifier = Modifier.padding(8.dp))
             if (noteList.isNotEmpty()) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(noteList) {
-                        Surface(
-                            color = MaterialTheme.colors.primary.copy(alpha = 0.125f),
+                        Card(
                             shape = MaterialTheme.shapes.small,
-                            elevation = 1.dp,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxSize()
                             ) {
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     val sdf = SimpleDateFormat("EEEE, d MMMM")
-                                    Text(text = it.title, style = MaterialTheme.typography.h6)
-                                    Text(text = it.note, style = MaterialTheme.typography.subtitle1)
+                                    Text(
+                                        text = it.title,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Text(text = it.note, style = MaterialTheme.typography.bodySmall)
                                     Text(
                                         text = sdf.format(it.date),
-                                        style = MaterialTheme.typography.caption
+                                        style = MaterialTheme.typography.labelSmall
                                     )
                                 }
-                                IconButton(onClick = {
+                                IconButton({
                                     viewModel.removeNote(it)
                                 }) {
                                     Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Trash Icon",
-                                        tint = MaterialTheme.colors.error
+                                        Icons.Filled.Delete,
+                                        "Delete Button",
+                                        tint = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }
@@ -98,7 +105,7 @@ fun NoteScreen(viewModel: NoteViewModel = viewModel()) {
                     )
                     Text(
                         text = "No notes yet",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF919191)
                     )
                 }
